@@ -3,6 +3,7 @@ import redis
 import json
 from datetime import datetime
 import ast
+import time
 SECtoMSEC = 1000000
 DBpub = 0
 
@@ -47,7 +48,7 @@ def send_message(topic, message):
 def read_data():
     lineList = list()
     nMessage=0
-    with open("data/vehicle2.json") as f:
+    with open("data/vehicle3.json") as f:
       for line in f:
         line = ast.literal_eval(line.strip("\n"))
         line["ip"]= "192.168.56.103"
@@ -55,7 +56,7 @@ def read_data():
         #print(lineList)
         for msg in lineList:
                 nMessage += 1
-                #time.sleep(0.01)
+                #time.sleep(0.5)
                 send_message(myTopic, "[{}:{}] {}".format(pubName, nMessage, msg))
 
 
