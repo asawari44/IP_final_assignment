@@ -9,6 +9,14 @@ port = 1883
 timelive = 60
 SECtoMSEC = 1000000
 DBsub = 0
+# 705 corresponds to 'overtake', 100 corresponds to 'stop streaming'
+maneuver = 705
+stopStreaming = 100
+# radius within the vehicles can communicate
+radius = 50
+
+stream = False
+
 positions_1 = []
 positions_2 = []
 positions_3 = []
@@ -16,12 +24,13 @@ dict1={}
 dict2={}
 #myTopic = "vehicle1"
 topic_list = ["vehicle1","vehicle2","vehicle3"]
-subNumb = 1
+subNumb = "watcher"
 subName = "{}".format(subNumb)
 
+dist31, dist32 = -1, -1
 
 # var for redis
-msgN = 1
+msgN = 0
 # instance of redis
 r = redis.Redis(db=DBsub)
 
@@ -65,9 +74,12 @@ def on_connect(client, userdata, flags, result):
     client.subscribe(topic_list[2])
     print("Client subscribed to: {}, {}, {}".format(topic_list[0], topic_list[1], topic_list[2]))
 
+def send_message(topic, message):
+    client.publish(topic, message)
+
 
 def on_message(client, userdata, msg):
-    global msgN
+    global msgN, dist31, dist32, stream
     currentTime = datetime.now()
     message = str(msg.payload.decode("utf-8"))
 
@@ -76,37 +88,68 @@ def on_message(client, userdata, msg):
     message_details="{"+message.split("{")[1]'''
     # message = timeST_x_y_ip
 
-    if(msg.topic == topic_list[0]):
-        positions_1.append(message)
+    if(msg.topic == topic_list[2]):
+        positions_3.append(message)
         #a=ast.literal_eval(message_details)
         #location_v=a["location"]
         #location = ast.literal_eval(message_details_2[-1])["location"]
-        pos = message.split("_")
-        posOther = positions_3[-1].split("_")
-        dist = calc_distance(pos[1], pos[2], posOther[1], posOther[2])
-        print(dist)
+        if message == maneuver:
+            stream = True
+        if message == stopStreaming:
+            stream = False
 
+        if stream:
+
+            pos3 = positions_3[-1].split("_")
+            pos1 = positions_1[-1].split("_")
+            pos2 = positions_2[-1].split("_")
+            dist31 = calc_distance(pos3[1], pos3[2], pos1[1], pos1[2])
+            dist32 = calc_distance(pos3[1], pos3[2], pos2[1], pos2[2])
+            print("Distance of police(v3) from bike(v1): {}. Distance of police from car(v2): {}".format(dist31, dist32))
+
+            # are v1 and v3 close enough??
+            if dist31 <= radius:
+                # msg = nFrame_ip
+                # to v3 we send the n. of message(frame number) and the ip addr. of v1
+                update4v3 = "{}_{}".format(msgN, pos1[3])
+                # to v1 we send the n. of message(frame number) and the ip addr. of v3
+                update4v1 = "{}_{}".format(msgN, pos3[3])
+                client.publish(topic_list[2], update4v3)
+                client.publish(topic_list[0], update4v1)
+            else:
+                stream = False
+
+            # are v2 and v3 close enough??
+            if dist32 <= radius:
+                # msg = nFrame_ip
+                # to v3 we send the n. of message(frame number) and the ip addr. of v2
+                update4v3 = "{}_{}".format(msgN, pos2[3])
+                # to v2 we send the n. of message(frame number) and the ip addr. of v3
+                update4v2 = "{}_{}".format(msgN, pos3[3])
+                client.publish(topic_list[2], update4v3)
+                client.publish(topic_list[1], update4v2)
+            else:
+                stream = False
+
+        if stream:
+            client.publish(topic_list[0], stopStreaming)
+            client.publish(topic_list[1], stopStreaming)
+            client.publish(topic_list[2], stopStreaming)
         
-    elif(msg.topic == topic_list[1]):
+    elif msg.topic == topic_list[1]:
         positions_2.append(message)
-        pos = message.split("_")
+        '''pos = message.split("_")
         posOther = positions_3[-1].split("_")
         dist = calc_distance(pos[1], pos[2], posOther[1], posOther[2])
-        print(dist)
+        print(dist)'''
 
-    elif(msg.topic == topic_list[2]):
-        positions_3.append(message)
-        pos = message.split("_")
+    elif msg.topic == topic_list[0]:
+        positions_1.append(message)
+        '''pos = message.split("_")
         posOther = positions_3[-1].split("_")
         dist = calc_distance(pos[1], pos[2], posOther[1], posOther[2])
-        print(dist)
+        print(dist)'''
 
-    
-    #[1:2041] {'ip': '192.168.56.103', 'video_ts': 4629, 'world_ts': 1582307195. 3292122, 'location': [7.691190719604492, -48.50749588012695]}
-    #print('{}_{}_{}'.format(myInfo[0], myInfo[1], message))
-    mSec = currentTime.minute * 60 * SECtoMSEC + currentTime.second * SECtoMSEC + currentTime.microsecond
-    
-    #r.set('{}_{}_{}_{}'.format(myInfo[0], myInfo[1], message), '{}'.format(mSec))
     msgN += 1
 
 
