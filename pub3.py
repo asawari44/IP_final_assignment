@@ -4,11 +4,21 @@ import json
 from datetime import datetime
 import ast
 import time
+
 SECtoMSEC = 1000000
 DBpub = 3
 
 pubNumb = 3
 ip3 = "192.168.56.102"
+
+# second of delay from one location to the following
+speed = 0.5
+
+# frame n. that trigger the streaming
+triggerFrame = 50
+
+# 705 correspond to 'overtake'
+maneuver = 705
 
 broker = "localhost"
 port = 1883
@@ -20,6 +30,8 @@ myTopic = 'vehicle3'
 msgN = 1
 # instance of redis
 r = redis.Redis(db=DBpub)
+
+
 
 # define callbacks
 def on_message(client, userdata, message):
@@ -43,11 +55,17 @@ def send_message(topic, message):
 def read_data():
     lineList = list()
     nMessage = 0
+
     with open("data/v3_police.txt") as f:
         for line in f:
+            if nMessage == triggerFrame:
+                send_message(myTopic, "{}".format(maneuver))
             lines = line.split("\n")
             line = lines[0] + "_" + ip3
+            send_message(myTopic, "{}".format(line))
             print(line)
+            time.sleep(speed)
+            nMessage =+ 1
 
 
 def on_connect(client, userdata, flags, rc):
@@ -64,9 +82,3 @@ client.connect(broker, port)
 read_data()
 print("data sent...")
 
-'''
-# save record in a file
-# open w/ automatic closure, tutorial: https://stackabuse.com/saving-text-json-and-csv-to-a-file-in-python/
-with open(pubName + 'Records.json', 'w') as myFile:
-    json.dump(record, myFile)
-'''
