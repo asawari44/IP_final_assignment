@@ -9,6 +9,7 @@ DBpub = 0
 
 ''' modify this parameter in the script '''
 pubNumb = 2
+ip2 = "111"
 
 broker = "localhost"
 port = 1883
@@ -48,7 +49,12 @@ def send_message(topic, message):
 def read_data():
     lineList = list()
     nMessage=0
-    with open("data/vehicle3.json") as f:
+    with open("data/v2_car.txt") as f:
+        for line in f:
+            lines = line.split("\n")
+            line = lines[0] + "_" + ip2
+            print(line)
+    '''with open("data/vehicle3.json") as f:
       for line in f:
         line = ast.literal_eval(line.strip("\n"))
         line["ip"]= "192.168.56.103"
@@ -57,7 +63,7 @@ def read_data():
         for msg in lineList:
                 nMessage += 1
                 #time.sleep(0.5)
-                send_message(myTopic, "[{}:{}] {}".format(pubName, nMessage, msg))
+                send_message(myTopic, "[{}:{}] {}".format(pubName, nMessage, msg))'''
 
 
 def on_connect(client, userdata, flags, rc):

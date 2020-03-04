@@ -1,4 +1,5 @@
 from datetime import datetime
+
 datetime.now(tz=None)
 dateTimeObj = datetime.now()
 nf1 = 411
@@ -14,7 +15,8 @@ x, y = 0, 0
 for i in range(nf1):
      x = x + bikeStep
      # timeST_x_y
-     f.write("{}_{}_{}\n".format(i, x, y))
+     print("{}_{}_{}".format(i, x, y), file=f)
+     #f.write("{}_{}_{}\n".format(i, x, y))
 f.close()
 
 
@@ -26,7 +28,8 @@ f= open("v3_police.txt","w+")
 for i in range(nf2):
      x = x + bikeStep
      # timeST_x_y
-     f.write("{}_{}_{}\n".format(i, x, y))
+     #f.write("{}_{}_{}\n".format(i, x, y))
+     print("{}_{}_{}".format(i, x, y), file=f)
 f.close()
 
 
@@ -38,5 +41,6 @@ f= open("v2_car.txt","w+")
 for i in range(nf3):
      x = x - bikeStep
      # timeST_x_y
-     f.write("{}_{}_{}\n".format(i, x, y))
+     #f.write("{}_{}_{}\n".format(i, x, y))
+     print("{}_{}_{}".format(i, x, y), file=f)
 f.close()
