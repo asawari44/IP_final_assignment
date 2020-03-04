@@ -10,6 +10,8 @@ DBpub = 0
 ''' modify this parameter in the script '''
 pubNumb = 1
 ip1 = "111"
+# second of delay from one location to the following
+speed = 0.5
 
 broker = "localhost"
 port = 1883
@@ -53,7 +55,9 @@ def read_data():
         for line in f:
             lines = line.split("\n")
             line = lines[0] + "_" + ip1
+            send_message(myTopic, "{}".format(line))
             print(line)
+            time.sleep(speed)
     '''with open("data/vehicle1.json") as f:
       for line in f:
         line = ast.literal_eval(line.strip("\n"))
