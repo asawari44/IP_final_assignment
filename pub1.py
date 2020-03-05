@@ -9,7 +9,7 @@ DBpub = 0
 
 ''' modify this parameter in the script '''
 pubNumb = 1
-ip1 = "111"
+ip1 = "192.168.56.101"
 # second of delay from one location to the following
 speed = 0.5
 

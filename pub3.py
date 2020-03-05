@@ -9,13 +9,13 @@ SECtoMSEC = 1000000
 DBpub = 3
 
 pubNumb = 3
-ip3 = "192.168.56.102"
+ip3 = "192.168.56.103"
 
 # second of delay from one location to the following
 speed = 0.5
 
 # frame n. that trigger the streaming
-triggerFrame = 50
+triggerFrame = 1
 
 # 705 correspond to 'overtake'
 maneuver = 705
@@ -58,14 +58,16 @@ def read_data():
 
     with open("data/v3_police.txt") as f:
         for line in f:
-            if nMessage == triggerFrame:
+              lines = line.split("\n")
+              line = lines[0] + "_" + ip3
+              if nMessage == triggerFrame:
                 send_message(myTopic, "{}".format(maneuver))
-            lines = line.split("\n")
-            line = lines[0] + "_" + ip3
-            send_message(myTopic, "{}".format(line))
-            print(line)
-            time.sleep(speed)
-            nMessage =+ 1
+                print("trigger sent...")
+              else:
+                send_message(myTopic, "{}".format(line))
+                print(line)
+              time.sleep(speed)
+              nMessage += 1
 
 
 def on_connect(client, userdata, flags, rc):
