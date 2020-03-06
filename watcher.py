@@ -38,6 +38,9 @@ msgN = 0
 #r = redis.Redis(db=DBsub)
 
 
+# TODO: check tutorial for client pub/sub in the same file
+
+
 # define callbacks
 def calc_distance(px, py, vx, vy):
     '''R = 6373.0
