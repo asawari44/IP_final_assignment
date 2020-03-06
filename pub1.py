@@ -18,6 +18,11 @@ port = 1883
 timelive = 60
 pubName = "{}".format(pubNumb)
 myTopic = 'vehicle1'
+my2Topic = "vehicle1s"
+
+# 705 correspond to 'overtake'
+maneuver = "705"
+stopStreaming = "101"
 
 # var for redis
 msgN = 1
@@ -28,15 +33,15 @@ msgN = 1
 
 # define callbacks
 def on_message(client, userdata, message):
-    print("received message =", str(message.payload.decode("utf-8")))
+    print("Received message =", str(message.payload.decode("utf-8")))
 
 
 def send_message(topic, message):
     global msgN
     currentTime = datetime.now()
     client.publish(topic, message)
-    mSec = currentTime.minute * 60 * SECtoMSEC + currentTime.second * SECtoMSEC + currentTime.microsecond
-    print(message, ", mSec: ", mSec)
+    #mSec = currentTime.minute * 60 * SECtoMSEC + currentTime.second * SECtoMSEC + currentTime.microsecond
+    print("Sending ", message)
     #r.set('{}_{}'.format(pubName, msgN), '{}'.format(mSec))
     msgN += 1
 
@@ -49,7 +54,7 @@ def read_data():
             lines = line.split("\n")
             line = lines[0] + "_" + ip1
             send_message(myTopic, "{}".format(line))
-            print(line)
+            #print(line)
             time.sleep(speed)
     '''with open("data/vehicle1.json") as f:
       for line in f:
@@ -66,6 +71,7 @@ def read_data():
 
 def on_connect(client, userdata, flags, rc):
     print("publishing..")
+    client.subscribe(my2Topic)
 
 
 client = mqtt.Client()
@@ -77,4 +83,5 @@ client.connect(broker, port)
 # send data
 read_data()
 print("data sent...")
-
+# force the subscriber to listen
+client.loop_forever()

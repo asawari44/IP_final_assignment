@@ -11,7 +11,8 @@ SECtoMSEC = 1000000
 DBsub = 0
 # 705 corresponds to 'overtake', 100 corresponds to 'stop streaming'
 overtake = "705"
-stopStreaming = "100"
+stopStreaming4watcher = "100"
+stopStreaming4vehicles = "101"
 # radius within the vehicles can communicate
 radius = 30
 
@@ -25,6 +26,7 @@ positions_3 = []
 
 #myTopic = "vehicle1"
 topic_list = ["vehicle1","vehicle2","vehicle3"]
+topic_list1 = ["vehicle1s","vehicle2s","vehicle3s"]
 subNumb = "watcher"
 subName = "{}".format(subNumb)
 
@@ -89,7 +91,7 @@ def on_message(client, userdata, msg):
         stream1 = True
         stream2 = True
         print("Stream requested...")
-    if message == stopStreaming:
+    if message == stopStreaming4watcher:
         stream1 = False
         stream2 = False
         print("Stopping Stream...")
@@ -98,7 +100,7 @@ def on_message(client, userdata, msg):
     if(msg.topic == topic_list[2]):
         if message == overtake:
             print("Trigger arrived.")
-        elif message == stopStreaming:
+        elif message == stopStreaming4watcher:
             print("stopStreaming arrived.")
         else:
             positions_3.append(message)
@@ -110,7 +112,7 @@ def on_message(client, userdata, msg):
 
                 dist31 = calc_distance(float(pos3[1]), float(pos3[2]), float(pos1[1]), float(pos1[2]))
                 dist32 = calc_distance(float(pos3[1]), float(pos3[2]), float(pos2[1]), float(pos2[2]))
-                print("Police from bike: {} m. Police from car: {} m".format(dist31, dist32))
+                print("Police from bike: {} m. Police from car: {} m".format(round(dist31, 2), round(dist32, 2)))
 
                 b31 = dist31 - dist31_nMinus1
                 b32 = dist32 - dist32_nMinus1
@@ -126,13 +128,21 @@ def on_message(client, userdata, msg):
                     # to v1 we send the n. of message(frame number) and the ip addr. of v3
                     update4v1 = "{}_{}".format(msgN, pos3[3])
                     # start to stream from FRAME[msgN]
-                    client.publish(topic_list[2], update4v3)
-                    client.publish(topic_list[0], update4v1)
-                    print("Vehicle 1 start stream")
-                elif dist31 > radius and b31 > 0:
-                    print("Vehicle 1 NOT stream")
+                    client.publish(topic_list1[2], update4v3)
+                    client.publish(topic_list1[0], update4v1)
+                    print("Vehicle 1 IS streaming")
+                elif dist31 <= radius and b31 > 0:
+                    update4v3 = "{}_{}".format(msgN, pos1[3])
+                    # to v1 we send the n. of message(frame number) and the ip addr. of v3
+                    update4v1 = "{}_{}".format(msgN, pos3[3])
+                    # start to stream from FRAME[msgN]
+                    client.publish(topic_list1[2], update4v3)
+                    client.publish(topic_list1[0], update4v1)
+                    print("Vehicle 1 IS streaming")
+                elif dist31 > radius and b31 >= 0:
+                    print("Vehicle 1 is STOPPING streaming")
                     stream1 = False
-                    client.publish(topic_list[0], stopStreaming)
+                    client.publish(topic_list1[0], stopStreaming4vehicles)
 
                 # are v2 and v3 close enough??
                 if dist32 <= radius and b32 <= 0:
@@ -141,13 +151,20 @@ def on_message(client, userdata, msg):
                     update4v3 = "{}_{}".format(msgN, pos2[3])
                     # to v2 we send the n. of message(frame number) and the ip addr. of v3
                     update4v2 = "{}_{}".format(msgN, pos3[3])
-                    client.publish(topic_list[2], update4v3)
-                    client.publish(topic_list[1], update4v2)
-                    print("Vehicle 2 start stream")
-                elif dist32 > radius and b32 > 0:
-                    print("Vehicle 2 NOT stream")
+                    client.publish(topic_list1[2], update4v3)
+                    client.publish(topic_list1[1], update4v2)
+                    print("Vehicle 2 IS streaming")
+                elif dist32 <= radius and b32 > 0:
+                    update4v3 = "{}_{}".format(msgN, pos2[3])
+                    # to v2 we send the n. of message(frame number) and the ip addr. of v3
+                    update4v2 = "{}_{}".format(msgN, pos3[3])
+                    client.publish(topic_list1[2], update4v3)
+                    client.publish(topic_list1[1], update4v2)
+                    print("Vehicle 2 IS streaming")
+                elif dist32 > radius and b32 >= 0:
+                    print("Vehicle 2 is STOPPING streaming")
                     stream2 = False
-                    client.publish(topic_list[1], stopStreaming)
+                    client.publish(topic_list1[1], stopStreaming4vehicles)
 
     elif msg.topic == topic_list[1]:
         positions_2.append(message)

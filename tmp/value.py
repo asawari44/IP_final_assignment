@@ -43,5 +43,5 @@ for i in range(nf3):
      x = x - carStep
      # timeST_x_y
      #f.write("{}_{}_{}\n".format(i, x, y))
-     print("{}_{}_{}".format(i, x, y), file=f)
+     print("{}_{}_{}".format(i, round(x, 2), round(y, 2)), file=f)
 f.close()
