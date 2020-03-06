@@ -39,6 +39,7 @@ msgN = 0
 
 
 # TODO: check tutorial for client pub/sub in the same file
+# TODO: fix the number of the messages sent by the watcher
 
 
 # define callbacks
