@@ -168,6 +168,8 @@ def on_message(client, userdata, msg):
                     print("Vehicle 2 is STOPPING streaming")
                     stream2 = False
                     client.publish(topic_list1[1], stopStreaming4vehicles)
+            else:
+                print("NO cooperation going on")
 
     elif msg.topic == topic_list[1]:
         positions_2.append(message)
