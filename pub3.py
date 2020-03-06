@@ -12,10 +12,10 @@ pubNumb = 3
 ip3 = "192.168.56.103"
 
 # second of delay from one location to the following
-speed = 0.5
+speed = 0.2
 
 # frame n. that trigger the streaming
-triggerFrame = 1
+triggerFrame = 30
 
 # 705 correspond to 'overtake'
 maneuver = 705
@@ -29,17 +29,13 @@ myTopic = 'vehicle3'
 # var for redis
 msgN = 1
 # instance of redis
-r = redis.Redis(db=DBpub)
+#r = redis.Redis(db=DBpub)
 
 
 
 # define callbacks
 def on_message(client, userdata, message):
     print("received message =", str(message.payload.decode("utf-8")))
-
-
-def on_log(client, userdata, level, buf):
-    print("log: ", buf)
 
 
 def send_message(topic, message):

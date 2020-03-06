@@ -10,38 +10,33 @@ timelive = 60
 SECtoMSEC = 1000000
 DBsub = 0
 # 705 corresponds to 'overtake', 100 corresponds to 'stop streaming'
-maneuver = "705"
+overtake = "705"
 stopStreaming = "100"
 # radius within the vehicles can communicate
-radius = 20
+radius = 30
 
-stream = False
+stream1 = False
+stream2 = False
 
-v1s = False
-v2s = False
 
 positions_1 = []
 positions_2 = []
 positions_3 = []
-dict1={}
-dict2={}
+
 #myTopic = "vehicle1"
 topic_list = ["vehicle1","vehicle2","vehicle3"]
 subNumb = "watcher"
 subName = "{}".format(subNumb)
 
-dist31, dist32 = -1, -1
+dist31, dist32 = radius + 1, radius + 1
 
 # var for redis
 msgN = 0
 # instance of redis
-r = redis.Redis(db=DBsub)
+#r = redis.Redis(db=DBsub)
 
-'''
-print("db1 size: {}".format(r.dbsize()))
-r.flushdb()
-print("db1 size: {} after flushdb()".format(r.dbsize()))
-'''
+
+# define callbacks
 def calc_distance(px, py, vx, vy):
     '''R = 6373.0
     lat1 = math.radians(location[0])
@@ -61,86 +56,99 @@ def calc_distance(px, py, vx, vy):
 
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     distance = R * c'''
-    print("calc func")
     x = vx - px
     y = vy - py
 
     distance = math.sqrt(x**2 + y**2)
-    print(distance)
     return distance
-
 
 def on_connect(client, userdata, flags, result):
     #print("Connection : {}".format(result))
     # tu subscribe to more topic(["topic1", "topic2"])
-    #client.subscribe(["vehicle1","vehicle2","vehicle3"])
     client.subscribe(topic_list[0])
     client.subscribe(topic_list[1])
     client.subscribe(topic_list[2])
-    #print("Client subscribed to: {}, {}, {}".format(topic_list[0], topic_list[1], topic_list[2]))
+    print("Client subscribed to: {}, {}, {}".format(topic_list[0], topic_list[1], topic_list[2]))
 
 def send_message(topic, message):
     client.publish(topic, message)
 
+# vars to record distance history
+b31, b32 = -1, -1
+dist31_nMinus1 = 100*radius + 1
+dist32_nMinus1 = 100*radius + 1
 
 def on_message(client, userdata, msg):
-    global msgN, dist31, dist32, stream
-    currentTime = datetime.now()
+    global msgN, dist31, dist32, stream1, stream2, b31, b32, dist31_nMinus1, dist32_nMinus1
+    #currentTime = datetime.now()
     message = str(msg.payload.decode("utf-8"))
     #print(message)
     
     # message = timeST_x_y_ip
-    if message == maneuver:
-        stream = True
-        print("stream required")
+    if message == overtake:
+        stream1 = True
+        stream2 = True
+        print("Stream requested...")
     if message == stopStreaming:
-        stream = False 
+        stream1 = False
+        stream2 = False
+        print("Stopping Stream...")
 
 
     if(msg.topic == topic_list[2]):
-        positions_3.append(message)
-        #a=ast.literal_eval(message_details)
-        #location_v=a["location"]
-        #location = ast.literal_eval(message_details_2[-1])["location"]
+        if message == overtake:
+            print("Trigger arrived.")
+        elif message == stopStreaming:
+            print("stopStreaming arrived.")
+        else:
+            positions_3.append(message)
         
-        if stream == True:
-            pos3 = positions_3[-1].split("_")
-            pos1 = positions_1[-1].split("_")
-            pos2 = positions_2[-1].split("_")
+            if stream1 == True or stream2 == True:
+                pos3 = positions_3[-1].split("_")
+                pos1 = positions_1[-1].split("_")
+                pos2 = positions_2[-1].split("_")
 
-            dist31 = calc_distance(float(pos3[1]), float(pos3[2]), float(pos1[1]), float(pos1[2]))
-            dist32 = calc_distance(float(pos3[1]), float(pos3[2]), float(pos2[1]), float(pos2[2]))
-            print("Distance of police(v3) from bike(v1): {}. Distance of police from car(v2): {}".format(dist31, dist32))
+                dist31 = calc_distance(float(pos3[1]), float(pos3[2]), float(pos1[1]), float(pos1[2]))
+                dist32 = calc_distance(float(pos3[1]), float(pos3[2]), float(pos2[1]), float(pos2[2]))
+                print("Police from bike: {} m. Police from car: {} m".format(dist31, dist32))
 
-            # are v1 and v3 close enough??
-            if dist31 <= radius:
-                v1s = True
-                # msg = nFrame_ip
-                # to v3 we send the n. of message(frame number) and the ip addr. of v1
-                update4v3 = "{}_{}".format(msgN, pos1[3])
-                # to v1 we send the n. of message(frame number) and the ip addr. of v3
-                update4v1 = "{}_{}".format(msgN, pos3[3])
-                client.publish(topic_list[2], update4v3)
-                client.publish(topic_list[0], update4v1)
-                print("Vehicle 1 start stram")
-            elif dist31 > radius and v1s:
-                stream = False
-                client.publish(topic_list[0], stopStreaming)                 
+                b31 = dist31 - dist31_nMinus1
+                b32 = dist32 - dist32_nMinus1
 
-            # are v2 and v3 close enough??
-            if dist32 <= radius:
-                v2s = True
-                # msg = nFrame_ip
-                # to v3 we send the n. of message(frame number) and the ip addr. of v2
-                update4v3 = "{}_{}".format(msgN, pos2[3])
-                # to v2 we send the n. of message(frame number) and the ip addr. of v3
-                update4v2 = "{}_{}".format(msgN, pos3[3])
-                client.publish(topic_list[2], update4v3)
-                client.publish(topic_list[1], update4v2)
-                print("Vehicle 2 start stream")
-            elif dist32 > radius and v2s:
-                stream = False
-                client.publish(topic_list[1], stopStreaming)
+                dist31_nMinus1 = dist31
+                dist32_nMinus1 = dist32
+
+                # are v1 and v3 close enough??
+                if dist31 <= radius and b31 <= 0:
+                    # msg = nFrame_ip
+                    # to v3 we send the n. of message(frame number) and the ip addr. of v1
+                    update4v3 = "{}_{}".format(msgN, pos1[3])
+                    # to v1 we send the n. of message(frame number) and the ip addr. of v3
+                    update4v1 = "{}_{}".format(msgN, pos3[3])
+                    # start to stream from FRAME[msgN]
+                    client.publish(topic_list[2], update4v3)
+                    client.publish(topic_list[0], update4v1)
+                    print("Vehicle 1 start stream")
+                elif dist31 > radius and b31 > 0:
+                    print("Vehicle 1 NOT stream")
+                    stream1 = False
+                    client.publish(topic_list[0], stopStreaming)
+
+                # are v2 and v3 close enough??
+                if dist32 <= radius and b32 <= 0:
+                    # msg = nFrame_ip
+                    # to v3 we send the n. of message(frame number) and the ip addr. of v2
+                    update4v3 = "{}_{}".format(msgN, pos2[3])
+                    # to v2 we send the n. of message(frame number) and the ip addr. of v3
+                    update4v2 = "{}_{}".format(msgN, pos3[3])
+                    client.publish(topic_list[2], update4v3)
+                    client.publish(topic_list[1], update4v2)
+                    print("Vehicle 2 start stream")
+                elif dist32 > radius and b32 > 0:
+                    print("Vehicle 2 NOT stream")
+                    stream2 = False
+                    client.publish(topic_list[1], stopStreaming)
+
     elif msg.topic == topic_list[1]:
         positions_2.append(message)
         '''pos = message.split("_")

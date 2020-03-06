@@ -11,7 +11,7 @@ DBpub = 0
 pubNumb = 2
 ip2 = "192.168.56.102"
 # second of delay from one location to the following
-speed = 0.5
+speed = 0.2
 
 broker = "localhost"
 port = 1883
@@ -22,20 +22,13 @@ myTopic = 'vehicle2'
 # var for redis
 msgN = 1
 # instance of redis
-r = redis.Redis(db=DBpub)
+#r = redis.Redis(db=DBpub)
 
-'''
-# record of timestamp
-record = {}
-'''
+
 
 # define callbacks
 def on_message(client, userdata, message):
     print("received message =", str(message.payload.decode("utf-8")))
-
-
-def on_log(client, userdata, level, buf):
-    print("log: ", buf)
 
 
 def send_message(topic, message):
@@ -44,7 +37,7 @@ def send_message(topic, message):
     client.publish(topic, message)
     mSec = currentTime.minute * 60 * SECtoMSEC + currentTime.second * SECtoMSEC + currentTime.microsecond
     print(message, ", mSec: ", mSec)
-    r.set('{}_{}'.format(pubName, msgN), '{}'.format(mSec))
+    #r.set('{}_{}'.format(pubName, msgN), '{}'.format(mSec))
     msgN += 1
 
 
@@ -83,10 +76,3 @@ client.connect(broker, port)
 # send data
 read_data()
 print("data sent...")
-
-'''
-# save record in a file
-# open w/ automatic closure, tutorial: https://stackabuse.com/saving-text-json-and-csv-to-a-file-in-python/
-with open(pubName + 'Records.json', 'w') as myFile:
-    json.dump(record, myFile)
-'''
